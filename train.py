@@ -161,6 +161,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     sentence = [[] for i in range(batch_size)]
     state_prob = [[] for i in range(batch_size)]
     state_loss = [0 for i in range(batch_size)]
+   # normal_loss = [0 for i in range(batch_size)]
     if use_teacher_forcing:
         for t in range(max_target_len):
             decoder_output, decoder_hidden, _ = decoder(
@@ -187,10 +188,10 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             topk, topi = decoder_output.topk(1) # [64, 1]
             #print(decoder_output)
             randomone = torch.ones([64, 92383]).to(device)
-            if iteration > 1000:
-                sample = torch.multinomial(F.softmax(decoder_output, dim=1), 1)
-            else:
-                sample = torch.multinomial(randomone, 1) #(64, 1)
+           # if iteration > 1000:
+            sample = torch.multinomial(F.softmax(decoder_output, dim=1), 1)
+            #else:
+            #    sample = torch.multinomial(randomone, 1) #(64, 1)
           #  print(sample)
           #  ni = topi[0][0]
            # print(ni)
@@ -207,7 +208,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             #sentence.append(voc.index2word[ni.item()])
             decoder_input = torch.LongTensor([[sample[i][0] for i in range(batch_size)]])
             decoder_input = decoder_input.to(device)
-
+            loss += F.cross_entropy(decoder_output, target_variable[t], ignore_index=EOS_token)
             #loss += F.cross_entropy(decoder_output, sample.view(-1), ignore_index=EOS_token)
 
     #sentence = ' '.join(sentence) 
