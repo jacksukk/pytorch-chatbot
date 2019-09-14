@@ -1,12 +1,14 @@
 import torch
 import random
-from train import indexesFromSentence
+#from train import indexesFromSentence
 from load import SOS_token, EOS_token
 from load import MAX_LENGTH, loadPrepareData, Voc
 from model import *
 
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
+def indexesFromSentence(voc, sentence):
+    return [voc.word2index[word] for word in sentence.split(' ')] + [EOS_token]
 
 class Sentence:
     def __init__(self, decoder_hidden, last_idx=SOS_token, sentence_idxes=[], sentence_scores=[]):
@@ -127,6 +129,7 @@ def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, n=10):
         else:
             print('>', pair[0])
         if beam_size == 1:
+            print(pair[0])
             output_words, _ = evaluate(encoder, decoder, voc, pair[0], beam_size)
             output_sentence = ' '.join(output_words)
             print('<', output_sentence)
