@@ -1,12 +1,54 @@
 import torch
 import random
-from train import indexesFromSentence
+random.seed(4)
+#from train import indexesFromSentence
 from load import SOS_token, EOS_token
 from load import MAX_LENGTH, loadPrepareData, Voc
 from model import *
 
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
+from keras import backend as K                                       
+from keras.preprocessing.sequence import pad_sequences                 
+from keras.models import load_model
+import tensorflow as tf
+import math
+import time                                                                                                                                                        
+from gensim.models import word2vec                                   
+import pandas as pd                                                  
+import numpy as np   
+
+# 只使用 30% 的 GPU 記憶體
+gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
+sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
+# 設定 Keras 使用的 TensorFlow Session
+tf.keras.backend.set_session(sess)
+model = word2vec.Word2Vec.load('word2vec.model')
+model2 = load_model("model.h5")
+
+def test(sentences):
+    
+    test_x = []
+    for sentence in sentences:
+        temp = []
+        for w in sentence:
+            if w not in model:
+                temp.append(np.zeros(256))
+                continue
+            temp.append(model[w])
+        test_x.append(temp[:])
+    if test_x == []:
+        test_x = [[np.zeros(256)]]
+    test_x = pad_sequences(test_x, maxlen=48, padding='post', truncating='post', value=np.zeros(256))
+
+
+    y_predict = model2.predict(test_x)
+    return y_predict
+
+
+def indexesFromSentence(voc, sentence):
+    return [voc.word2index[word] for word in sentence.split(' ')] + [EOS_token]
 
 class Sentence:
     def __init__(self, decoder_hidden, last_idx=SOS_token, sentence_idxes=[], sentence_scores=[]):
@@ -118,7 +160,7 @@ def evaluate(encoder, decoder, voc, sentence, beam_size, max_length=MAX_LENGTH):
         return beam_decode(decoder, decoder_hidden, encoder_outputs, voc, beam_size)
 
 
-def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, n=10):
+def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, n=10):
     for _ in range(n):
         pair = random.choice(pairs)
         print("=============================================================")
@@ -127,9 +169,18 @@ def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, n=10):
         else:
             print('>', pair[0])
         if beam_size == 1:
+
+  
             output_words, _ = evaluate(encoder, decoder, voc, pair[0], beam_size)
+            output_words = output_words[:-1]
             output_sentence = ' '.join(output_words)
+            recieve, _ = evaluate(testenco, testdeco, voc, output_sentence, beam_size)
             print('<', output_sentence)
+            recieve = recieve[:-1]
+            recieve[-1] = recieve[-1][:-1]
+            print('<>', ' '.join(recieve))
+            score = test(recieve)
+            print(score[0][0].item())
         else:
             output_words_list = evaluate(encoder, decoder, voc, pair[0], beam_size)
             for output_words, score in output_words_list:
@@ -160,22 +211,31 @@ def runTest(n_layers, hidden_size, reverse, modelFile, beam_size, inp, corpus):
 
     voc, pairs = loadPrepareData(corpus)
     embedding = nn.Embedding(voc.n_words, hidden_size)
+    embedding2 = nn.Embedding(voc.n_words, hidden_size)
+    testenco = EncoderRNN(voc.n_words, hidden_size, embedding2, n_layers)
     encoder = EncoderRNN(voc.n_words, hidden_size, embedding, n_layers)
     attn_model = 'dot'
     decoder = LuongAttnDecoderRNN(attn_model, embedding, hidden_size, voc.n_words, n_layers)
-
+    testdeco = LuongAttnDecoderRNN(attn_model, embedding2, hidden_size, voc.n_words, n_layers)
     checkpoint = torch.load(modelFile)
+    checkpoint2 = torch.load('./50000_backup_bidir_model.tar')
     encoder.load_state_dict(checkpoint['en'])
     decoder.load_state_dict(checkpoint['de'])
+    testenco.load_state_dict(checkpoint2['en'])
+    testdeco.load_state_dict(checkpoint2['de'])
 
     # train mode set to false, effect only on dropout, batchNorm
     encoder.train(False);
     decoder.train(False);
 
+    testenco.eval()
+    testdeco.eval()
+    testenco = testenco.to(device)
+    testdeco = testdeco.to(device)
     encoder = encoder.to(device)
     decoder = decoder.to(device)
 
     if inp:
         evaluateInput(encoder, decoder, voc, beam_size)
     else:
-        evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, 20)
+        evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, 10)
