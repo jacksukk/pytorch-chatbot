@@ -179,9 +179,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
                 state_prob[i].append(decoder_output[i][sample[i][0]])
                 sentence[i].append(voc.index2word[sample[i][0].item()])
             
-            #sentence.append(voc.index2word[ni.item()])
             decoder_input = target_variable[t].view(1, -1) # Next input is current target
-#loss += F.cross_entropy(decoder_output, target_variable[t], ignore_index=EOS_token)
     else:
         for t in range(max_target_len):
             decoder_output, decoder_hidden, decoder_attn = decoder(
@@ -190,37 +188,21 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             test_output, test_hidden, test_attn = testdeco(
                 decoder_input, test_hidden, testenco_outputs
             )
-            #print(decoder_output)
             topk, topi = decoder_output.topk(1) # [64, 1]
-            #print(decoder_output)
             randomone = torch.ones([64, 92383]).to(device)
-            #if random.random() < 0.99:
             sample = torch.multinomial(F.softmax(decoder_output, dim=1), 1)
             test_output = F.softmax(test_output, dim=1)
-            #print(test_output[0][sample[0][0].item()].item())
-            #else:
-            #    sample = torch.multinomial(randomone, 1) #(64, 1)
-          #  print(sample)
 
             flag = True
-#print(decoder_output.shape)
             for i in range(batch_size):
                 if voc.index2word[sample[i][0].item()] == 'EOS' or voc.index2word[sample[i][0].item()] == 'PAD':
                     continue
-            #    state_prob[i].append(decoder_output[i][sample[i][0]])
                 sentence[i].append(voc.index2word[sample[i][0].item()])
                 temploss = F.cross_entropy(decoder_output[i].unsqueeze(0), sample.view(-1)[i].unsqueeze(0), ignore_index=EOS_token)
                 test_loss[i] = test_loss[i] + test_output[i][sample[i][0].item()].item() * temploss
                 state_loss[i] = state_loss[i] + temploss
-                #state_prob.append(F.cross_entropy(decoder_output[i].unsqueeze(0), sample.view(-1)[i].unsqueeze(0), ignore_index=EOS_token))
-            #sentence.append(voc.index2word[ni.item()])
             decoder_input = torch.LongTensor([[sample[i][0] for i in range(batch_size)]])
             decoder_input = decoder_input.to(device)
-            #loss += F.cross_entropy(decoder_output, target_variable[t], ignore_index=EOS_token)
-           # loss += F.cross_entropy(decoder_output, sample.view(-1), ignore_index=EOS_token)
-
-    #sentence = ' '.join(sentence) 
-#    start_time = time.time()
 
     for i in range(len(sentence)):
         temp = ' '.join(sentence[i])
@@ -232,25 +214,11 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             print('< ', ' '.join(output_words))
         sentence[i] = output_words[:]
 
- #   elapsed_time = time.time() - start_time
-#    print("evaluate", elapsed_time)
-  #  start_time = time.time()
 # your code
     score = test(sentence)
-#    elapsed_time = time.time() - start_time
-#    print("test take time", elapsed_time)
- #   print(score)
-    #loss = loss * score[0][0].item()
     for i in range(batch_size):
         loss += state_loss[i] * (score[i][0].item())
         loss += test_loss[i]
-
-#    loss = loss * score.item()
-    # for i in range(batch_size):
-    #     loss += criterion(state_prob[i], score[i][0])
-    #score = [[5]]
-   # loss += criterion(state_prob, score[0][0])
-
     loss.backward()
 
     print("Reward:%.2f,     loss:%.6f"%(np.mean(score), loss))
