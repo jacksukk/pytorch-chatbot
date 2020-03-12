@@ -187,16 +187,16 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             decoder_output, decoder_hidden, decoder_attn = decoder(
                 decoder_input, decoder_hidden, encoder_outputs
             )
-            test_output, test_hidden, test_attn = testdeco(
-                decoder_input, test_hidden, testenco_outputs
-            )
+           # test_output, test_hidden, test_attn = testdeco(
+            #    decoder_input, test_hidden, testenco_outputs
+            #)
             #print(decoder_output)
             topk, topi = decoder_output.topk(1) # [64, 1]
             #print(decoder_output)
-            randomone = torch.ones([64, 92383]).to(device)
+            #randomone = torch.ones([64, 92383]).to(device)
             #if random.random() < 0.99:
             sample = torch.multinomial(F.softmax(decoder_output, dim=1), 1)
-            test_output = F.softmax(test_output, dim=1)
+            #test_output = F.softmax(test_output, dim=1)
             #print(test_output[0][sample[0][0].item()].item())
             #else:
             #    sample = torch.multinomial(randomone, 1) #(64, 1)
@@ -210,7 +210,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             #    state_prob[i].append(decoder_output[i][sample[i][0]])
                 sentence[i].append(voc.index2word[sample[i][0].item()])
                 temploss = F.cross_entropy(decoder_output[i].unsqueeze(0), sample.view(-1)[i].unsqueeze(0), ignore_index=EOS_token)
-                test_loss[i] = test_loss[i] + test_output[i][sample[i][0].item()].item() * temploss
+                #test_loss[i] = test_loss[i] + test_output[i][sample[i][0].item()].item() * temploss
                 state_loss[i] = state_loss[i] + temploss
                 #state_prob.append(F.cross_entropy(decoder_output[i].unsqueeze(0), sample.view(-1)[i].unsqueeze(0), ignore_index=EOS_token))
             #sentence.append(voc.index2word[ni.item()])
@@ -243,7 +243,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     #loss = loss * score[0][0].item()
     for i in range(batch_size):
         loss += state_loss[i] * (score[i][0].item())
-        loss += test_loss[i]
+       # loss += test_loss[i]
 
 #    loss = loss * score.item()
     # for i in range(batch_size):
