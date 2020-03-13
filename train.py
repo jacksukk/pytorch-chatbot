@@ -203,7 +203,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
                 state_loss[i] = state_loss[i] + temploss
             decoder_input = torch.LongTensor([[sample[i][0] for i in range(batch_size)]])
             decoder_input = decoder_input.to(device)
-
+    import string
     for i in range(len(sentence)):
         temp = ' '.join(sentence[i])
         output_words, _ = evaluate(testenco, testdeco, voc, temp, 1)
@@ -212,6 +212,9 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
         if i == 0:
             print('> ', temp)
             print('< ', ' '.join(output_words))
+        temp = ' '.join(output_words)
+        temp = temp.lower().translate(str.maketrans(' ', ' ', string.punctuation))
+        output_words[:] = temp.split()
         sentence[i] = output_words[:]
 
 # your code
