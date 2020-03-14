@@ -17,6 +17,7 @@ import time
 from gensim.models import word2vec                                   
 import pandas as pd                                                  
 import numpy as np   
+from tqdm import tqdm
 
 # 只使用 30% 的 GPU 記憶體
 gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
@@ -161,34 +162,27 @@ def evaluate(encoder, decoder, voc, sentence, beam_size, max_length=MAX_LENGTH):
 
 
 def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, n=10):
-    for _ in range(n):
-        pair = random.choice(pairs)
-        print("=============================================================")
-        if reverse:
-            print('>', " ".join(reversed(pair[0].split())))
-        else:
-            print('>', pair[0])
-        if beam_size == 1:
-
+    with open('result.txt', 'w') as f:
+        for p in tqdm(range(n)):
+            pair = pairs[p]
+            if reverse:
+                f.write(" ".join(reversed(pair[0].split())))
+            else:
+                f.write(pair[0])
+            f.write('\n')
             import string
             output_words, _ = evaluate(encoder, decoder, voc, pair[0], beam_size)
             output_words = output_words[:-1]
             output_sentence = ' '.join(output_words)
             recieve, _ = evaluate(testenco, testdeco, voc, output_sentence, beam_size)
-            print('<', output_sentence)
+            f.write(output_sentence)
+            f.write('\n')
             recieve = recieve[:-1]
             recieve[-1] = recieve[-1][:-1]
-            print('<>', ' '.join(recieve))
-            temp = temp.lower().translate(str.maketrans(' ', ' ', string.punctuation))
-            recieve = temp.split()
-            score = test(recieve)
-            print(score[0][0].item())
-        else:
-            output_words_list = evaluate(encoder, decoder, voc, pair[0], beam_size)
-            for output_words, score in output_words_list:
-                output_sentence = ' '.join(output_words)
-                print("{:.3f} < {}".format(score, output_sentence))
-
+            f.write(' '.join(recieve))
+            f.write('\n')
+            f.write('=========================')
+            f.write('\n')
 def evaluateInput(encoder, decoder, voc, beam_size):
     pair = ''
     while(1):
@@ -211,7 +205,8 @@ def evaluateInput(encoder, decoder, voc, beam_size):
 def runTest(n_layers, hidden_size, reverse, modelFile, beam_size, inp, corpus):
     torch.set_grad_enabled(False)
 
-    voc, pairs = loadPrepareData(corpus)
+    voc, pairs = loadPrepareData('data/movie_subtitles.txt')
+    _, pairs = loadPrepareData(corpus)
     embedding = nn.Embedding(voc.n_words, hidden_size)
     embedding2 = nn.Embedding(voc.n_words, hidden_size)
     testenco = EncoderRNN(voc.n_words, hidden_size, embedding2, n_layers)
@@ -236,8 +231,7 @@ def runTest(n_layers, hidden_size, reverse, modelFile, beam_size, inp, corpus):
     testdeco = testdeco.to(device)
     encoder = encoder.to(device)
     decoder = decoder.to(device)
-
     if inp:
         evaluateInput(encoder, decoder, voc, beam_size)
     else:
-        evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, 10)
+        evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, len(pairs))
