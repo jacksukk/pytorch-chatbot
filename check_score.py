@@ -17,6 +17,8 @@ from tqdm import tqdm
 import math as m
 import argparse
 import string
+from numpy import dot
+from numpy.linalg import norm
 
 def parseFilename(filename, test=False):
     filename = filename.split('/')
@@ -83,9 +85,26 @@ def perplexity(encoder, decoder, voc, sentence):
     input_batch = input_batch.to(device)
 
     encoder_outputs, encoder_hidden = encoder(input_batch, lengths, None)
+
     decoder_hidden = encoder_hidden[:decoder.n_layers]
     return decode(decoder, decoder_hidden, encoder_outputs, voc, sentence[1])
+def correlation(encoder, voc, sentence):
+    question = sentence[0]
+    indexes_batch = [indexesFromSentence(voc, question)] #[1, seq_len]
+    lengths = [len(indexes) for indexes in indexes_batch]
+    input_batch = torch.LongTensor(indexes_batch).transpose(0, 1)
+    input_batch = input_batch.to(device)
+    encoder_outputs, encoder_hidden_1 = encoder(input_batch, lengths, None)
+    question = sentence[1]
+    indexes_batch = [indexesFromSentence(voc, question)] #[1, seq_len]
+    lengths = [len(indexes) for indexes in indexes_batch]
+    input_batch = torch.LongTensor(indexes_batch).transpose(0, 1)
+    input_batch = input_batch.to(device)
+    encoder_outputs, encoder_hidden_2 = encoder(input_batch, lengths, None)
+    a = encoder_hidden_1[-1][0].cpu().detach().numpy()
+    b = encoder_hidden_2[-1][0].cpu().detach().numpy()
 
+    return dot(a, b) / norm(a) / norm(b) 
 def main():
     parser = argparse.ArgumentParser(description='Attention Seq2Seq Chatbot')
     parser.add_argument('-te', '--test', help='Test the saved model')
@@ -112,15 +131,18 @@ def main():
         ans = f.readlines()
     temp = []
     test_score = []
+    corr = 0
     for sentence in tqdm(ans):
         sentence = sentence[:-1]
         if sentence != '=========================':
             temp.append(sentence)
         else:
             total_loss += perplexity(encoder, decoder, voc, temp[:2])
+            corr += correlation(encoder, voc, temp[:2])
             test_score.append(temp[-1].lower().translate(str.maketrans(' ', ' ', string.punctuation)).split())
             temp = []
     print('perplexity:', m.pow(2, total_loss/len(test_score)))
+    print('correlation:', corr / len(test_score))
     print('scroe:', sum(test(test_score))/len(test_score))
 
 
