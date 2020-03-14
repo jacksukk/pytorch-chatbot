@@ -170,7 +170,7 @@ def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco,
             print('>', pair[0])
         if beam_size == 1:
 
-  
+            import string
             output_words, _ = evaluate(encoder, decoder, voc, pair[0], beam_size)
             output_words = output_words[:-1]
             output_sentence = ' '.join(output_words)
@@ -179,6 +179,8 @@ def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco,
             recieve = recieve[:-1]
             recieve[-1] = recieve[-1][:-1]
             print('<>', ' '.join(recieve))
+            temp = temp.lower().translate(str.maketrans(' ', ' ', string.punctuation))
+            recieve = temp.split()
             score = test(recieve)
             print(score[0][0].item())
         else:
