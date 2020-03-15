@@ -18,6 +18,7 @@ from gensim.models import word2vec
 import pandas as pd                                                  
 import numpy as np   
 from tqdm import tqdm
+import string
 
 # 只使用 30% 的 GPU 記憶體
 gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
@@ -71,7 +72,7 @@ class Sentence:
         terminates, sentences = [], []
         for i in range(beam_size):
             if topi[0][i] == EOS_token:
-                terminates.append(([voc.index2word[idx.item()] for idx in self.sentence_idxes] + ['<EOS>'],
+                terminates.append(([voc.index2word[idx.item()] for idx in self.sentence_idxes],
                                    self.avgScore())) # tuple(word_list, score_float
                 continue
             idxes = self.sentence_idxes[:] # pass by value
@@ -85,11 +86,13 @@ class Sentence:
         words = []
         for i in range(len(self.sentence_idxes)):
             if self.sentence_idxes[i] == EOS_token:
-                words.append('<EOS>')
+                continue
+                #words.append('<EOS>')
             else:
                 words.append(voc.index2word[self.sentence_idxes[i].item()])
-        if self.sentence_idxes[-1] != EOS_token:
-            words.append('<EOS>')
+        # if self.sentence_idxes[-1] != EOS_token:
+        #     words.append('<EOS>')
+        
         return (words, self.avgScore())
 
 def beam_decode(decoder, decoder_hidden, encoder_outputs, voc, beam_size, max_length=MAX_LENGTH):
@@ -117,7 +120,13 @@ def beam_decode(decoder, decoder_hidden, encoder_outputs, voc, beam_size, max_le
     terminal_sentences.sort(key=lambda x: x[1], reverse=True)
 
     n = min(len(terminal_sentences), 15)
-    return terminal_sentences[:n]
+    temp = [x[0] for x in terminal_sentences]
+    for i in range(len(temp)):
+        temp[i] = ' '.join(temp[i]).lower().translate(str.maketrans(' ', ' ', string.punctuation)).split()
+    score = test(temp)
+    maxi = np.argmax(score)
+
+    return terminal_sentences[maxi]
 
 def decode(decoder, decoder_hidden, encoder_outputs, voc, max_length=MAX_LENGTH):
 
@@ -162,7 +171,7 @@ def evaluate(encoder, decoder, voc, sentence, beam_size, max_length=MAX_LENGTH):
 
 
 def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, n=10):
-    with open('result.txt', 'w') as f:
+    with open('result_beam.txt', 'w') as f:
         for p in tqdm(range(n)):
             pair = pairs[p]
             if reverse:
@@ -172,8 +181,10 @@ def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco,
             f.write('\n')
             import string
             output_words, _ = evaluate(encoder, decoder, voc, pair[0], beam_size)
+            
             output_sentence = ' '.join(output_words)
-            recieve, _ = evaluate(testenco, testdeco, voc, output_sentence, beam_size)
+            recieve, _ = evaluate(testenco, testdeco, voc, output_sentence, 1)
+            
             f.write(output_sentence)
             f.write('\n')
             f.write(' '.join(recieve))
