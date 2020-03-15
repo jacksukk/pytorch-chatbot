@@ -207,8 +207,6 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     for i in range(len(sentence)):
         temp = ' '.join(sentence[i])
         output_words, _ = evaluate(testenco, testdeco, voc, temp, 1)
-        output_words = output_words[:-1]
-        output_words[-1] = output_words[-1][:-1]
         if i == 0:
             print('> ', temp)
             print('< ', ' '.join(output_words))
@@ -241,8 +239,8 @@ def trainIters(corpus, reverse, n_iteration, learning_rate, batch_size, n_layers
     
     saveloss = []
     savescore = []
-
-    voc, pairs = loadPrepareData(corpus)
+    voc, pairs = loadPrepareData('data/movie_subtitles.txt')
+    _, pairs = loadPrepareData(corpus)
 
     # training data
     corpus_name = os.path.split(corpus)[-1].split('.')[0]

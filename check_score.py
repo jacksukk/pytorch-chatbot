@@ -131,18 +131,21 @@ def main():
         ans = f.readlines()
     temp = []
     test_score = []
-    corr = 0
+    corr1 = 0
+    corr2 = 0
     for sentence in tqdm(ans):
         sentence = sentence[:-1]
         if sentence != '=========================':
             temp.append(sentence)
         else:
             total_loss += perplexity(encoder, decoder, voc, temp[:2])
-            corr += correlation(encoder, voc, temp[:2])
+            corr1 += correlation(encoder, voc, temp[:2])
+            corr2 += correlation(encoder, voc, [temp[0], temp[-1]])
             test_score.append(temp[-1].lower().translate(str.maketrans(' ', ' ', string.punctuation)).split())
             temp = []
     print('perplexity:', m.pow(2, total_loss/len(test_score)))
-    print('correlation:', corr / len(test_score))
+    print('correlation_in_1:', corr1 / len(test_score))
+    print('correlation_in_2:', corr2 / len(test_score))
     print('scroe:', sum(test(test_score))/len(test_score))
 
 

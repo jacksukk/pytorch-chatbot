@@ -134,7 +134,7 @@ def decode(decoder, decoder_hidden, encoder_outputs, voc, max_length=MAX_LENGTH)
         _, topi = decoder_output.topk(3)
         ni = topi[0][0]
         if ni == EOS_token:
-            decoded_words.append('<EOS>')
+        #    decoded_words.append('<EOS>')
             break
         else:
             decoded_words.append(voc.index2word[ni.item()])
@@ -172,13 +172,10 @@ def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco,
             f.write('\n')
             import string
             output_words, _ = evaluate(encoder, decoder, voc, pair[0], beam_size)
-            output_words = output_words[:-1]
             output_sentence = ' '.join(output_words)
             recieve, _ = evaluate(testenco, testdeco, voc, output_sentence, beam_size)
             f.write(output_sentence)
             f.write('\n')
-            recieve = recieve[:-1]
-            recieve[-1] = recieve[-1][:-1]
             f.write(' '.join(recieve))
             f.write('\n')
             f.write('=========================')
