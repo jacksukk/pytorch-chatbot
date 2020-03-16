@@ -20,7 +20,7 @@ def parse():
     parser.add_argument('-s', '--save', type=int, default=500, help='Save every s iterations')
     parser.add_argument('-lr', '--learning_rate', type=float, default=0.01, help='Learning rate')
     parser.add_argument('-d', '--dropout', type=float, default=0.1, help='Dropout probability for rnn and dropout layers')
-
+    parser.add_argument('-o', '--output', help='outputfile')
     args = parser.parse_args()
     return args
 
@@ -48,7 +48,7 @@ def run(args):
                     n_layers, hidden_size, print_every, save_every, dropout, loadFilename=args.load)
     elif args.test:
         n_layers, hidden_size, reverse = parseFilename(args.test, True)
-        runTest(n_layers, hidden_size, reverse, args.test, beam_size, inp, args.corpus)
+        runTest(n_layers, hidden_size, reverse, args.test, beam_size, inp, args.corpus, args.output)
 
 
 if __name__ == '__main__':

@@ -108,6 +108,7 @@ def correlation(encoder, voc, sentence):
 def main():
     parser = argparse.ArgumentParser(description='Attention Seq2Seq Chatbot')
     parser.add_argument('-te', '--test', help='Test the saved model')
+    parser.add_argument('-o', '--output', help='outputfile')
     args = parser.parse_args()
     n_layers, hidden_size, reverse = parseFilename(args.test, True)
     torch.set_grad_enabled(False)
@@ -127,7 +128,7 @@ def main():
     total_loss = 0
     total_score = 0
     count = 0
-    with open('result.txt') as f:
+    with open(args.output) as f:
         ans = f.readlines()
     temp = []
     test_score = []

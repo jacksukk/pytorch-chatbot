@@ -170,8 +170,8 @@ def evaluate(encoder, decoder, voc, sentence, beam_size, max_length=MAX_LENGTH):
         return beam_decode(decoder, decoder_hidden, encoder_outputs, voc, beam_size)
 
 
-def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, n=10):
-    with open('result_beam.txt', 'w') as f:
+def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, n=10, outfile):
+    with open(outfile, 'w') as f:
         for p in tqdm(range(n)):
             pair = pairs[p]
             if reverse:
@@ -210,7 +210,7 @@ def evaluateInput(encoder, decoder, voc, beam_size):
             print("Incorrect spelling.")
 
 
-def runTest(n_layers, hidden_size, reverse, modelFile, beam_size, inp, corpus):
+def runTest(n_layers, hidden_size, reverse, modelFile, beam_size, inp, corpus, outfile):
     torch.set_grad_enabled(False)
 
     voc, pairs = loadPrepareData('data/movie_subtitles.txt')
@@ -242,4 +242,4 @@ def runTest(n_layers, hidden_size, reverse, modelFile, beam_size, inp, corpus):
     if inp:
         evaluateInput(encoder, decoder, voc, beam_size)
     else:
-        evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, len(pairs))
+        evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, len(pairs), outfile)
