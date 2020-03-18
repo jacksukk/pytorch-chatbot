@@ -170,7 +170,7 @@ def evaluate(encoder, decoder, voc, sentence, beam_size, max_length=MAX_LENGTH):
         return beam_decode(decoder, decoder_hidden, encoder_outputs, voc, beam_size)
 
 
-def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, n=10, outfile):
+def evaluateRandomly(encoder, decoder, voc, pairs, reverse, beam_size, testenco, testdeco, n=10, outfile='fuck'):
     with open(outfile, 'w') as f:
         for p in tqdm(range(n)):
             pair = pairs[p]

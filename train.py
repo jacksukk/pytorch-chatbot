@@ -165,6 +165,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     state_loss = [0 for i in range(batch_size)]
     test_loss = [0 for i in range(batch_size)]
    # normal_loss = [0 for i in range(batch_size)]
+    last_ch = [0 for i in range(batch_size)]
     if use_teacher_forcing:
         for t in range(max_target_len):
             decoder_output, decoder_hidden, _ = decoder(
@@ -195,12 +196,17 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
 
             flag = True
             for i in range(batch_size):
-                if voc.index2word[sample[i][0].item()] == 'EOS' or voc.index2word[sample[i][0].item()] == 'PAD':
+                if last_ch[i] == 1:
                     continue
-                sentence[i].append(voc.index2word[sample[i][0].item()])
-                temploss = F.cross_entropy(decoder_output[i].unsqueeze(0), sample.view(-1)[i].unsqueeze(0), ignore_index=EOS_token)
-                test_loss[i] = test_loss[i] + test_output[i][sample[i][0].item()].item() * temploss
-                state_loss[i] = state_loss[i] + temploss
+                if voc.index2word[sample[i][0].item()] != 'EOS' and voc.index2word[sample[i][0].item()] != 'PAD':
+                    sentence[i].append(voc.index2word[sample[i][0].item()])
+
+                temploss_1 = F.cross_entropy(decoder_output[i].unsqueeze(0), sample.view(-1)[i].unsqueeze(0), ignore_index=EOS_token)
+                temploss_2 = F.cross_entropy(decoder_output[i].unsqueeze(0), sample.view(-1)[i].unsqueeze(0))
+                test_loss[i] = test_loss[i] + test_output[i][sample[i][0].item()].item() * temploss_2
+                state_loss[i] = state_loss[i] + temploss_1
+                if voc.index2word[sample[i][0].item()] == 'EOS':
+                    last_ch[i] = 1
             decoder_input = torch.LongTensor([[sample[i][0] for i in range(batch_size)]])
             decoder_input = decoder_input.to(device)
     import string
